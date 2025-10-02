@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Persistent To-Do List for Students</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h2>📝 Persistent Student To-Do List</h2>
+
+    <div class="input-group">
+        <input type="text" id="taskInput" placeholder="Enter a task..." />
+        <button id="addBtn">Add</button>
+    </div>
+
+    <ul id="taskList">
+        </ul>
+
+    <div class="controls">
+        <button id="generateBtn" class="full-width-btn">Generate Share Code (Base64)</button>
+        <textarea id="shareCode" readonly placeholder="Your URL-friendly Base64 share code will appear here"></textarea>
+    </div>
+
+    <div class="controls">
+        <textarea id="useCodeInput" placeholder="Paste a Base64 share code here"></textarea>
+        <button id="useBtn" class="full-width-btn">Use Share Code & Load List</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
