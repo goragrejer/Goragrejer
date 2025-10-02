@@ -1,170 +1,42 @@
-/* --- STYLES (style.css) --- */
-body { 
-    font-family: Arial, sans-serif; 
-    max-width: 500px; 
-    margin: 30px auto; 
-    padding: 15px; 
-    background-color: #f4f7f6;
-    color: #333;
-}
-h2 { 
-    text-align: center; 
-    color: #0073e6;
-    margin-bottom: 25px;
-}
-input[type="text"] { 
-    padding: 10px; 
-    width: 70%; 
-    border: 1px solid #ccc; 
-    border-radius: 5px 0 0 5px; 
-    font-size: 16px;
-}
-button { 
-    padding: 10px 15px; 
-    border: none; 
-    background: #0073e6; 
-    color: white; 
-    border-radius: 0 5px 5px 0; 
-    cursor: pointer; 
-    font-size: 16px;
-    transition: background 0.3s;
-}
-#addBtn {
-    border-radius: 0 5px 5px 0;
-}
-button:hover { 
-    background: #005bb5; 
-}
-ul { 
-    list-style: none;
-    margin-top: 15px; 
-    padding: 0; 
-    border-top: 1px solid #eee;
-}
-li { 
-    margin: 0; 
-    padding: 10px 0;
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    border-bottom: 1px solid #eee;
-    transition: background-color 0.2s;
-    cursor: pointer; 
-}
-li:hover {
-    background-color: #fcfcfc;
-}
+/* --- NEW STYLES FOR FILTER BUTTONS --- */
 
-/* ----------------------------------------------------- */
-/* --- NEW STYLES REQUIRED FOR DATE TRACKING FEATURE --- */
-/* ----------------------------------------------------- */
-
-li span.task-content { 
-    /* This ensures the entire content block (text + date) takes up space */
-    flex: 1; 
-    padding-right: 10px;
-    display: block; /* Allows the task-date to drop to a new line */
-}
-
-.task-date {
-    /* Styles for the date text to make it subtle */
-    color: #888;
-    font-size: 0.8em; /* Make it smaller than the task text */
-    display: block; /* Ensures the date is on its own line */
-    margin-top: 2px;
-}
-
-/* Ensure the line-through applies only to the text content, not the date */
-li.completed span.task-content {
-    text-decoration: none; /* Reset text-decoration on the container */
-}
-li.completed span.task-content * {
-    color: #999; /* Grey out all content */
-}
-/* Re-apply line-through specifically to the task text itself */
-li.completed span.task-content {
-    text-decoration: line-through; 
-}
-/* A small adjustment to correctly target the main text when completed */
-li.completed .task-content {
-    color: #999;
-    text-decoration: line-through; 
-}
-li.completed .task-date {
-    text-decoration: none; /* Remove line-through from the date */
-}
-
-/* --- NEW STYLES FOR AGE TRACKING --- */
-
-/* Less than 4 days old */
-li.days-green {
-    border-left: 5px solid #28a745; /* Bright green border on the left */
-    padding-left: 5px; /* Adjust padding due to the new border */
-}
-
-/* 4 to 10 days old */
-li.days-yellow {
-    border-left: 5px solid #ffc107; /* Amber/Yellow border */
-    padding-left: 5px;
-}
-
-/* More than 10 days old (over a week and a half) */
-li.days-red {
-    border-left: 5px solid #dc3545; /* Red border for high urgency */
-    padding-left: 5px;
-}
-/* Update: Text color based on age tracking classes */
-
-/* Less than 4 days old */
-li.days-green .task-content {
-    color: #28a745; /* Task text is bright green */
-}
-
-/* 4 to 10 days old */
-li.days-yellow .task-content {
-    color: #ff8c00; /* Task text is a darker orange/yellow */
-}
-
-/* More than 10 days old */
-li.days-red .task-content {
-    color: #dc3545; /* Task text is red */
-}
-/* ----------------------------------------------------- */
-
-
-.deleteBtn { 
-    background: #e60000; 
-    margin-left: 10px; 
-    border-radius: 5px;
-    padding: 5px 10px;
-}
-.deleteBtn:hover { 
-    background: #b30000; 
-}
-textarea { 
-    width: 100%; 
-    min-height: 80px;
-    margin-top: 10px; 
-    padding: 8px; 
-    border-radius: 5px; 
-    border: 1px solid #ccc; 
-    font-family: monospace; 
-    resize: vertical;
-}
-.controls { 
-    margin-top: 20px; 
-    padding-top: 10px;
-    border-top: 1px solid #eee;
-}
-.input-group {
+.filters {
     display: flex;
-    margin-bottom: 15px;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
 }
-.full-width-btn {
-    width: 100%;
+
+.filters label {
+    font-weight: bold;
+    color: #555;
+    margin-right: 10px;
+}
+
+.filter-btn {
+    /* Override global button styles for filter bar aesthetics */
+    background: #ccc;
+    color: #333;
+    padding: 8px 12px;
     border-radius: 5px;
-    margin-top: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s, color 0.2s;
+    /* Resetting some border-radius from the global button rule */
+    border-radius: 5px; 
 }
-.full-width-btn:hover {
+
+.filter-btn:hover {
+    background: #bbb;
+}
+
+.active-filter {
+    background: #0073e6; /* Blue background for active button */
+    color: white;
+}
+
+.active-filter:hover {
     background: #005bb5;
 }
