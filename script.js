@@ -24,10 +24,10 @@ function getCurrentDateFormatted() {
     return `${year}-${month}-${day}`;
 }
 
-// NEW FUNCTION: Calculates days passed and determines color class
+// Calculates days passed and determines color class
 function getDaysPassedAndColor(creationDateString) {
     if (!creationDateString) {
-        return { days: 0, colorClass: '' }; // No date means no color/counter
+        return { days: null, colorClass: '' }; 
     }
 
     const today = new Date();
@@ -37,9 +37,7 @@ function getDaysPassedAndColor(creationDateString) {
     today.setHours(0, 0, 0, 0);
     creationDate.setHours(0, 0, 0, 0);
 
-    // Calculate the difference in milliseconds
-    const diffTime = Math.abs(today - creationDate);
-    // Convert to days (1 day = 1000ms * 60s * 60m * 24h)
+    const diffTime = today.getTime() - creationDate.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     let colorClass = '';
@@ -80,7 +78,7 @@ function loadTasksFromStorage() {
 
 // --- CORE RENDERING AND INTERACTION LOGIC ---
 
-// Render the list (Updated to include day count and color class)
+// Render the list (Updated to include day count, color class, and [INDEX])
 function renderTasks() {
     taskList.innerHTML = '';
     tasks.forEach((task, index) => {
@@ -88,22 +86,32 @@ function renderTasks() {
         
         // 1. DETERMINE DAYS PASSED AND COLOR CLASS
         const { days, colorClass } = getDaysPassedAndColor(task.createdDate);
-        let daysText = days > 0 ? `${days} day${days > 1 ? 's' : ''} past` : 'Today';
         
-        // Apply the color class to the list item
+        let daysText;
+        if (days === null) {
+            daysText = 'No Age Data';
+        } else if (days === 0) {
+            daysText = 'Today';
+        } else if (days === 1) {
+            daysText = '1 day past';
+        } else {
+            daysText = `${days} days past`;
+        }
+        
+        // Apply the color class for the border and the new text color
         if (colorClass) {
             li.classList.add(colorClass);
         }
         
-        // Apply 'completed' class if the task is marked completed
+        // Apply 'completed' class 
         if (task.completed) {
             li.classList.add('completed');
         }
 
-        // 2. INCLUDE THE DAYS COUNTER IN THE HTML
+        // 2. INCLUDE THE DAYS COUNTER AND INDEX COUNTER IN THE HTML
         li.innerHTML = `
             <span class="task-content">
-                ${task.text}
+                <span class="task-index">[${index + 1}]</span> ${task.text}
                 <small class="task-date"> 
                     (Added: ${task.createdDate || 'No Date'}) 
                     — ${daysText}
@@ -156,7 +164,7 @@ taskInput.addEventListener('keydown', (e) => {
 
 
 // --- SHARE CODE FUNCTIONS (Base64 Encoding) ---
-// (No changes needed here, as they handle data transport)
+// (Logic unchanged)
 
 function encodeBase64(str) {
     return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
@@ -186,7 +194,6 @@ function importTasks(code) {
             tasks = importedTasks.map(task => ({
                 text: task.text,
                 completed: task.completed || false,
-                // Ensure date exists on imported tasks for the counter to work
                 createdDate: task.createdDate || getCurrentDateFormatted() 
             }));
             
