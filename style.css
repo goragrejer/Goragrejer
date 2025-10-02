@@ -54,15 +54,47 @@ li {
 li:hover {
     background-color: #fcfcfc;
 }
-li span { 
+
+/* ----------------------------------------------------- */
+/* --- NEW STYLES REQUIRED FOR DATE TRACKING FEATURE --- */
+/* ----------------------------------------------------- */
+
+li span.task-content { 
+    /* This ensures the entire content block (text + date) takes up space */
     flex: 1; 
     padding-right: 10px;
+    display: block; /* Allows the task-date to drop to a new line */
 }
-/* Style for completed tasks */
-li.completed span {
-    text-decoration: line-through;
+
+.task-date {
+    /* Styles for the date text to make it subtle */
+    color: #888;
+    font-size: 0.8em; /* Make it smaller than the task text */
+    display: block; /* Ensures the date is on its own line */
+    margin-top: 2px;
+}
+
+/* Ensure the line-through applies only to the text content, not the date */
+li.completed span.task-content {
+    text-decoration: none; /* Reset text-decoration on the container */
+}
+li.completed span.task-content * {
+    color: #999; /* Grey out all content */
+}
+/* Re-apply line-through specifically to the task text itself */
+li.completed span.task-content {
+    text-decoration: line-through; 
+}
+/* A small adjustment to correctly target the main text when completed */
+li.completed .task-content {
     color: #999;
+    text-decoration: line-through; 
 }
+li.completed .task-date {
+    text-decoration: none; /* Remove line-through from the date */
+}
+/* ----------------------------------------------------- */
+
 
 .deleteBtn { 
     background: #e60000; 
