@@ -9,25 +9,34 @@ const useBtn = document.getElementById('useBtn');
 
 const STORAGE_KEY = 'studentTodoListTasks';
 
-// The main array to hold our tasks: {text: string, completed: boolean}
+// The main array to hold our tasks: {text: string, completed: boolean, createdDate: string}
 let tasks = [];
+
+
+// --- DATE UTILITY ---
+
+// Uses the user's local date to format the task creation stamp
+function getCurrentDateFormatted() {
+    const now = new Date();
+    const year = now.getFullYear();
+    // Month is 0-indexed, so we add 1
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 
 
 // --- LOCAL STORAGE FUNCTIONS (Persistence) ---
 
-// Saves the current tasks array to Local Storage
 function saveTasksToStorage() {
-    // Convert the JavaScript array into a JSON string to store it.
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
 }
 
-// Loads tasks from Local Storage on startup
 function loadTasksFromStorage() {
     const savedTasks = localStorage.getItem(STORAGE_KEY);
     
     if (savedTasks) {
         try {
-            // Parse the JSON string back into a JavaScript array
             tasks = JSON.parse(savedTasks);
         } catch (e) {
             console.error("Error loading tasks from Local Storage:", e);
@@ -47,38 +56,40 @@ function renderTasks() {
     taskList.innerHTML = '';
     tasks.forEach((task, index) => {
         const li = document.createElement('li');
-        const span = document.createElement('span');
-        span.textContent = task.text;
-        li.appendChild(span);
-
+        
         // Apply 'completed' class if the task is marked completed
         if (task.completed) {
             li.classList.add('completed');
         }
 
+        // The inner HTML includes the task text and the new date stamp
+        li.innerHTML = `
+            <span class="task-content">
+                ${task.text}
+                <small class="task-date"> (Added: ${task.createdDate || 'No Date'})</small>
+            </span>
+            <button class="deleteBtn" data-index="${index}">Delete</button>
+        `;
+
         // Toggle completion status on click of the list item
         li.onclick = (e) => {
-            // Check if the click target is NOT the delete button to prevent toggling when deleting
+            // Check if the click target is NOT the delete button
             if (!e.target.classList.contains('deleteBtn')) {
                 tasks[index].completed = !tasks[index].completed;
-                renderTasks(); // Re-render to update classes
+                renderTasks();
                 saveTasksToStorage();
             }
         };
 
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Delete';
-        delBtn.className = 'deleteBtn';
-        
-        // Delete button logic
+        // Attach event listener for the delete button
+        const delBtn = li.querySelector('.deleteBtn');
         delBtn.onclick = (e) => {
-            e.stopPropagation(); // Prevent the li click handler from running
+            e.stopPropagation(); // Stop the parent li's click event (toggle)
             tasks.splice(index, 1);
             renderTasks();
             saveTasksToStorage(); 
         };
         
-        li.appendChild(delBtn);
         taskList.appendChild(li);
     });
 }
@@ -87,8 +98,12 @@ function renderTasks() {
 addBtn.addEventListener('click', () => {
     const text = taskInput.value.trim();
     if (text) {
-        // Task is stored as an object with text and completion status
-        tasks.push({ text: text, completed: false });
+        // Task object now includes the date stamp
+        tasks.push({ 
+            text: text, 
+            completed: false,
+            createdDate: getCurrentDateFormatted() 
+        });
         taskInput.value = '';
         renderTasks();
         saveTasksToStorage();
@@ -103,42 +118,41 @@ taskInput.addEventListener('keydown', (e) => {
 
 // --- SHARE CODE FUNCTIONS (Base64 Encoding) ---
 
-// Convert string to Base64 (URL-safe)
 function encodeBase64(str) {
-    // btoa is a native browser function to convert string to Base64
     return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
-// Convert Base64 back to string
 function decodeBase64(b64) {
     b64 = b64.replace(/-/g, '+').replace(/_/g, '/');
-    // Ensure padding is correct for atob
     while (b64.length % 4) {
         b64 += '=';
     }
-    // atob is a native browser function to convert Base64 back to string
     return atob(b64);
 }
 
-// Generate Share Code (JSON -> Base64)
 generateBtn.addEventListener('click', () => {
     const jsonString = JSON.stringify(tasks);
     const base64Code = encodeBase64(jsonString);
     shareCode.value = base64Code;
 });
 
-// Use Share Code (Base64 -> JSON)
 function importTasks(code) {
     if (!code) return false;
     try {
         const jsonString = decodeBase64(code);
         const importedTasks = JSON.parse(jsonString);
         
-        // Basic validation: ensure it's an array and has the 'text' property
+        // Validation now checks for the new 'createdDate' property for new imports
         if (Array.isArray(importedTasks) && importedTasks.every(t => t.text !== undefined)) {
-            tasks = importedTasks;
+            // This loop ensures older tasks (without a date) get the current date upon import
+            tasks = importedTasks.map(task => ({
+                text: task.text,
+                completed: task.completed || false,
+                createdDate: task.createdDate || getCurrentDateFormatted()
+            }));
+            
             renderTasks();
-            saveTasksToStorage(); // Save imported list for persistence
+            saveTasksToStorage(); 
             return true;
         } else {
             alert('Invalid share code format.');
@@ -160,22 +174,16 @@ useBtn.addEventListener('click', () => {
 
 // --- URL SHARING FEATURE ---
 
-// Checks the URL for a 'list' parameter and loads it
 function loadFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
     const listCode = urlParams.get('list');
     
     if (listCode) {
-        console.log("Found URL share code. Importing list...");
         importTasks(listCode);
-        
-        // Optional: Clear the URL parameter after loading to keep it clean
-        // window.history.pushState({}, document.title, window.location.pathname);
     }
 }
 
 
 // --- INITIALIZATION ---
 
-// Start by loading any saved or shared tasks when the script first executes
 loadTasksFromStorage();
