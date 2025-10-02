@@ -19,10 +19,40 @@ let tasks = [];
 function getCurrentDateFormatted() {
     const now = new Date();
     const year = now.getFullYear();
-    // Month is 0-indexed, so we add 1
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+}
+
+// NEW FUNCTION: Calculates days passed and determines color class
+function getDaysPassedAndColor(creationDateString) {
+    if (!creationDateString) {
+        return { days: 0, colorClass: '' }; // No date means no color/counter
+    }
+
+    const today = new Date();
+    const creationDate = new Date(creationDateString);
+    
+    // Set both to midnight to only compare calendar dates, not time of day
+    today.setHours(0, 0, 0, 0);
+    creationDate.setHours(0, 0, 0, 0);
+
+    // Calculate the difference in milliseconds
+    const diffTime = Math.abs(today - creationDate);
+    // Convert to days (1 day = 1000ms * 60s * 60m * 24h)
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    let colorClass = '';
+    // --- COLOR LOGIC ---
+    if (diffDays <= 3) { // 3 days or less (including today) -> Green
+        colorClass = 'days-green';
+    } else if (diffDays <= 10) { // 4 to 10 days -> Yellow
+        colorClass = 'days-yellow';
+    } else { // More than 10 days (over a week and a half) -> Red
+        colorClass = 'days-red';
+    }
+    
+    return { days: diffDays, colorClass: colorClass };
 }
 
 
@@ -43,7 +73,6 @@ function loadTasksFromStorage() {
             tasks = [];
         }
     }
-    // Check for a share code in the URL when the page loads
     loadFromURL(); 
     renderTasks();
 }
@@ -51,29 +80,40 @@ function loadTasksFromStorage() {
 
 // --- CORE RENDERING AND INTERACTION LOGIC ---
 
-// Render the list
+// Render the list (Updated to include day count and color class)
 function renderTasks() {
     taskList.innerHTML = '';
     tasks.forEach((task, index) => {
         const li = document.createElement('li');
+        
+        // 1. DETERMINE DAYS PASSED AND COLOR CLASS
+        const { days, colorClass } = getDaysPassedAndColor(task.createdDate);
+        let daysText = days > 0 ? `${days} day${days > 1 ? 's' : ''} past` : 'Today';
+        
+        // Apply the color class to the list item
+        if (colorClass) {
+            li.classList.add(colorClass);
+        }
         
         // Apply 'completed' class if the task is marked completed
         if (task.completed) {
             li.classList.add('completed');
         }
 
-        // The inner HTML includes the task text and the new date stamp
+        // 2. INCLUDE THE DAYS COUNTER IN THE HTML
         li.innerHTML = `
             <span class="task-content">
                 ${task.text}
-                <small class="task-date"> (Added: ${task.createdDate || 'No Date'})</small>
+                <small class="task-date"> 
+                    (Added: ${task.createdDate || 'No Date'}) 
+                    — ${daysText}
+                </small>
             </span>
             <button class="deleteBtn" data-index="${index}">Delete</button>
         `;
 
         // Toggle completion status on click of the list item
         li.onclick = (e) => {
-            // Check if the click target is NOT the delete button
             if (!e.target.classList.contains('deleteBtn')) {
                 tasks[index].completed = !tasks[index].completed;
                 renderTasks();
@@ -84,7 +124,7 @@ function renderTasks() {
         // Attach event listener for the delete button
         const delBtn = li.querySelector('.deleteBtn');
         delBtn.onclick = (e) => {
-            e.stopPropagation(); // Stop the parent li's click event (toggle)
+            e.stopPropagation();
             tasks.splice(index, 1);
             renderTasks();
             saveTasksToStorage(); 
@@ -98,7 +138,6 @@ function renderTasks() {
 addBtn.addEventListener('click', () => {
     const text = taskInput.value.trim();
     if (text) {
-        // Task object now includes the date stamp
         tasks.push({ 
             text: text, 
             completed: false,
@@ -117,6 +156,7 @@ taskInput.addEventListener('keydown', (e) => {
 
 
 // --- SHARE CODE FUNCTIONS (Base64 Encoding) ---
+// (No changes needed here, as they handle data transport)
 
 function encodeBase64(str) {
     return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
@@ -142,13 +182,12 @@ function importTasks(code) {
         const jsonString = decodeBase64(code);
         const importedTasks = JSON.parse(jsonString);
         
-        // Validation now checks for the new 'createdDate' property for new imports
         if (Array.isArray(importedTasks) && importedTasks.every(t => t.text !== undefined)) {
-            // This loop ensures older tasks (without a date) get the current date upon import
             tasks = importedTasks.map(task => ({
                 text: task.text,
                 completed: task.completed || false,
-                createdDate: task.createdDate || getCurrentDateFormatted()
+                // Ensure date exists on imported tasks for the counter to work
+                createdDate: task.createdDate || getCurrentDateFormatted() 
             }));
             
             renderTasks();
