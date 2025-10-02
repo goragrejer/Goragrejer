@@ -14,8 +14,14 @@
         <button id="addBtn">Add</button>
     </div>
 
+    <div class="filters">
+        <label>Show:</label>
+        <button id="filterAll" data-filter="all" class="filter-btn active-filter">All Tasks</button>
+        <button id="filterActive" data-filter="active" class="filter-btn">Active</button>
+        <button id="filterCompleted" data-filter="completed" class="filter-btn">Completed</button>
+    </div>
     <ul id="taskList">
-        </ul>
+    </ul>
 
     <div class="controls">
         <button id="generateBtn" class="full-width-btn">Generate Share Code (Base64)</button>
