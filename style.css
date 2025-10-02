@@ -1,170 +1,242 @@
-/* --- STYLES (style.css) --- */
-body { 
-    font-family: Arial, sans-serif; 
-    max-width: 500px; 
-    margin: 30px auto; 
-    padding: 15px; 
-    background-color: #f4f7f6;
-    color: #333;
-}
-h2 { 
-    text-align: center; 
-    color: #0073e6;
-    margin-bottom: 25px;
-}
-input[type="text"] { 
-    padding: 10px; 
-    width: 70%; 
-    border: 1px solid #ccc; 
-    border-radius: 5px 0 0 5px; 
-    font-size: 16px;
-}
-button { 
-    padding: 10px 15px; 
-    border: none; 
-    background: #0073e6; 
-    color: white; 
-    border-radius: 0 5px 5px 0; 
-    cursor: pointer; 
-    font-size: 16px;
-    transition: background 0.3s;
-}
-#addBtn {
-    border-radius: 0 5px 5px 0;
-}
-button:hover { 
-    background: #005bb5; 
-}
-ul { 
-    list-style: none;
-    margin-top: 15px; 
-    padding: 0; 
-    border-top: 1px solid #eee;
-}
-li { 
-    margin: 0; 
-    padding: 10px 0;
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    border-bottom: 1px solid #eee;
-    transition: background-color 0.2s;
-    cursor: pointer; 
-}
-li:hover {
-    background-color: #fcfcfc;
-}
+// --- ELEMENT REFERENCES AND CONSTANTS ---
+const taskInput = document.getElementById('taskInput');
+const addBtn = document.getElementById('addBtn');
+const taskList = document.getElementById('taskList');
+const generateBtn = document.getElementById('generateBtn');
+const shareCode = document.getElementById('shareCode');
+const useCodeInput = document.getElementById('useCodeInput');
+const useBtn = document.getElementById('useBtn');
 
-/* ----------------------------------------------------- */
-/* --- NEW STYLES REQUIRED FOR DATE TRACKING FEATURE --- */
-/* ----------------------------------------------------- */
+// Filter button references and logic variables have been removed
 
-li span.task-content { 
-    /* This ensures the entire content block (text + date) takes up space */
-    flex: 1; 
-    padding-right: 10px;
-    display: block; /* Allows the task-date to drop to a new line */
-}
+const STORAGE_KEY = 'studentTodoListTasks';
 
-.task-date {
-    /* Styles for the date text to make it subtle */
-    color: #888;
-    font-size: 0.8em; /* Make it smaller than the task text */
-    display: block; /* Ensures the date is on its own line */
-    margin-top: 2px;
-}
-
-/* Ensure the line-through applies only to the text content, not the date */
-li.completed span.task-content {
-    text-decoration: none; /* Reset text-decoration on the container */
-}
-li.completed span.task-content * {
-    color: #999; /* Grey out all content */
-}
-/* Re-apply line-through specifically to the task text itself */
-li.completed span.task-content {
-    text-decoration: line-through; 
-}
-/* A small adjustment to correctly target the main text when completed */
-li.completed .task-content {
-    color: #999;
-    text-decoration: line-through; 
-}
-li.completed .task-date {
-    text-decoration: none; /* Remove line-through from the date */
-}
-
-/* --- NEW STYLES FOR AGE TRACKING --- */
-
-/* Less than 4 days old */
-li.days-green {
-    border-left: 5px solid #28a745; /* Bright green border on the left */
-    padding-left: 5px; /* Adjust padding due to the new border */
-}
-
-/* 4 to 10 days old */
-li.days-yellow {
-    border-left: 5px solid #ffc107; /* Amber/Yellow border */
-    padding-left: 5px;
-}
-
-/* More than 10 days old (over a week and a half) */
-li.days-red {
-    border-left: 5px solid #dc3545; /* Red border for high urgency */
-    padding-left: 5px;
-}
-/* Update: Text color based on age tracking classes */
-
-/* Less than 4 days old */
-li.days-green .task-content {
-    color: #28a745; /* Task text is bright green */
-}
-
-/* 4 to 10 days old */
-li.days-yellow .task-content {
-    color: #ff8c00; /* Task text is a darker orange/yellow */
-}
-
-/* More than 10 days old */
-li.days-red .task-content {
-    color: #dc3545; /* Task text is red */
-}
-/* ----------------------------------------------------- */
+// The main array to hold our tasks: {text: string, completed: boolean, createdDate: string}
+let tasks = [];
 
 
-.deleteBtn { 
-    background: #e60000; 
-    margin-left: 10px; 
-    border-radius: 5px;
-    padding: 5px 10px;
+// --- DATE UTILITY ---
+
+// Uses the user's local date to format the task creation stamp
+function getCurrentDateFormatted() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
-.deleteBtn:hover { 
-    background: #b30000; 
+
+// Calculates days passed and determines color class
+function getDaysPassedAndColor(creationDateString) {
+    if (!creationDateString) {
+        return { days: null, colorClass: '' }; 
+    }
+
+    const today = new Date();
+    const creationDate = new Date(creationDateString);
+    
+    // Set both to midnight to only compare calendar dates
+    today.setHours(0, 0, 0, 0);
+    creationDate.setHours(0, 0, 0, 0);
+
+    const diffTime = today.getTime() - creationDate.getTime();
+    // Round up to count the current day as day 1
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    let colorClass = '';
+    // --- COLOR LOGIC ---
+    if (diffDays <= 3) { // 3 days or less (including today) -> Green
+        colorClass = 'days-green';
+    } else if (diffDays <= 10) { // 4 to 10 days -> Yellow
+        colorClass = 'days-yellow';
+    } else { // More than 10 days (over a week and a half) -> Red
+        colorClass = 'days-red';
+    }
+    
+    return { days: diffDays, colorClass: colorClass };
 }
-textarea { 
-    width: 100%; 
-    min-height: 80px;
-    margin-top: 10px; 
-    padding: 8px; 
-    border-radius: 5px; 
-    border: 1px solid #ccc; 
-    font-family: monospace; 
-    resize: vertical;
+
+
+// --- LOCAL STORAGE FUNCTIONS (Persistence) ---
+
+function saveTasksToStorage() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
 }
-.controls { 
-    margin-top: 20px; 
-    padding-top: 10px;
-    border-top: 1px solid #eee;
+
+function loadTasksFromStorage() {
+    const savedTasks = localStorage.getItem(STORAGE_KEY);
+    
+    if (savedTasks) {
+        try {
+            tasks = JSON.parse(savedTasks);
+        } catch (e) {
+            console.error("Error loading tasks from Local Storage:", e);
+            tasks = [];
+        }
+    }
+    loadFromURL(); 
+    renderTasks();
 }
-.input-group {
-    display: flex;
-    margin-bottom: 15px;
+
+
+// --- CORE RENDERING AND INTERACTION LOGIC ---
+
+function renderTasks() {
+    // We render ALL tasks (no filter applied)
+    taskList.innerHTML = '';
+    
+    tasks.forEach((task, index) => { // Looping through the main 'tasks' array
+        const li = document.createElement('li');
+        
+        const { days, colorClass } = getDaysPassedAndColor(task.createdDate);
+        
+        let daysText;
+        if (days === null) {
+            daysText = 'No Age Data';
+        } else if (days === 0) {
+            daysText = 'Today';
+        } else if (days === 1) {
+            daysText = '1 day past';
+        } else {
+            daysText = `${days} days past`;
+        }
+        
+        if (colorClass) {
+            li.classList.add(colorClass);
+        }
+        
+        if (task.completed) {
+            li.classList.add('completed');
+        }
+
+        // The index is simply the current position in the list
+        const stableIndex = index; 
+
+        li.innerHTML = `
+            <span class="task-content">
+                <span class="task-index">[${index + 1}]</span> ${task.text}
+                <small class="task-date"> 
+                    (Added: ${task.createdDate || 'No Date'}) 
+                    — ${daysText}
+                </small>
+            </span>
+            <button class="deleteBtn" data-index="${stableIndex}">Delete</button>
+        `;
+
+        // Toggle completion status on click
+        li.onclick = (e) => {
+            if (!e.target.classList.contains('deleteBtn')) {
+                // Use the stable index 
+                if (stableIndex !== -1) {
+                    tasks[stableIndex].completed = !tasks[stableIndex].completed;
+                    renderTasks();
+                    saveTasksToStorage();
+                }
+            }
+        };
+
+        // Delete button listener
+        const delBtn = li.querySelector('.deleteBtn');
+        delBtn.onclick = (e) => {
+            e.stopPropagation();
+            // The data-index holds the stable index
+            const deleteIndex = parseInt(e.target.getAttribute('data-index')); 
+            tasks.splice(deleteIndex, 1);
+            renderTasks();
+            saveTasksToStorage(); 
+        };
+        
+        taskList.appendChild(li);
+    });
 }
-.full-width-btn {
-    width: 100%;
-    border-radius: 5px;
-    margin-top: 10px;
+
+// Add task
+addBtn.addEventListener('click', () => {
+    const text = taskInput.value.trim();
+    if (text) {
+        tasks.push({ 
+            text: text, 
+            completed: false,
+            createdDate: getCurrentDateFormatted() 
+        });
+        taskInput.value = '';
+        renderTasks();
+        saveTasksToStorage();
+    }
+});
+
+// Enter key to add
+taskInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { addBtn.click(); }
+});
+
+
+// --- SHARE CODE FUNCTIONS (Base64 Encoding) ---
+
+function encodeBase64(str) {
+    return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
-.full-width-btn:hover {
-    background: #005bb5;
+
+function decodeBase64(b64) {
+    b64 = b64.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) {
+        b64 += '=';
+    }
+    return atob(b64);
 }
+
+generateBtn.addEventListener('click', () => {
+    const jsonString = JSON.stringify(tasks);
+    const base64Code = encodeBase64(jsonString);
+    shareCode.value = base64Code;
+});
+
+function importTasks(code) {
+    if (!code) return false;
+    try {
+        const jsonString = decodeBase64(code);
+        const importedTasks = JSON.parse(jsonString);
+        
+        if (Array.isArray(importedTasks) && importedTasks.every(t => t.text !== undefined)) {
+            tasks = importedTasks.map(task => ({
+                text: task.text,
+                completed: task.completed || false,
+                createdDate: task.createdDate || getCurrentDateFormatted() 
+            }));
+            
+            renderTasks();
+            saveTasksToStorage(); 
+            return true;
+        } else {
+            alert('Invalid share code format.');
+            return false;
+        }
+    } catch (e) {
+        alert('Invalid share code: Decoding or JSON parse failed.');
+        console.error('Import error:', e);
+        return false;
+    }
+}
+
+useBtn.addEventListener('click', () => {
+    const code = useCodeInput.value.trim();
+    if (importTasks(code)) {
+        useCodeInput.value = '';
+    }
+});
+
+// --- URL SHARING FEATURE ---
+
+function loadFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const listCode = urlParams.get('list');
+    
+    if (listCode) {
+        importTasks(listCode);
+    }
+}
+
+
+// --- INITIALIZATION ---
+
+loadTasksFromStorage();
