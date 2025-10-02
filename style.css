@@ -113,6 +113,22 @@ li.days-red {
     border-left: 5px solid #dc3545; /* Red border for high urgency */
     padding-left: 5px;
 }
+/* Update: Text color based on age tracking classes */
+
+/* Less than 4 days old */
+li.days-green .task-content {
+    color: #28a745; /* Task text is bright green */
+}
+
+/* 4 to 10 days old */
+li.days-yellow .task-content {
+    color: #ff8c00; /* Task text is a darker orange/yellow */
+}
+
+/* More than 10 days old */
+li.days-red .task-content {
+    color: #dc3545; /* Task text is red */
+}
 /* ----------------------------------------------------- */
 
 
