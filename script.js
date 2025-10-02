@@ -7,7 +7,7 @@ const shareCode = document.getElementById('shareCode');
 const useCodeInput = document.getElementById('useCodeInput');
 const useBtn = document.getElementById('useBtn');
 
-// NEW: References for filter buttons
+// References for filter buttons
 const filterAllBtn = document.getElementById('filterAll');
 const filterActiveBtn = document.getElementById('filterActive');
 const filterCompletedBtn = document.getElementById('filterCompleted');
@@ -17,12 +17,13 @@ const STORAGE_KEY = 'studentTodoListTasks';
 // The main array to hold our tasks: {text: string, completed: boolean, createdDate: string}
 let tasks = [];
 
-// NEW: Global variable to track the current filter state ('all', 'active', 'completed')
+// Global variable to track the current filter state
 let currentFilter = 'all';
 
 
-// --- DATE UTILITY (UNCHANGED) ---
+// --- DATE UTILITY ---
 
+// Uses the user's local date to format the task creation stamp
 function getCurrentDateFormatted() {
     const now = new Date();
     const year = now.getFullYear();
@@ -31,6 +32,7 @@ function getCurrentDateFormatted() {
     return `${year}-${month}-${day}`;
 }
 
+// Calculates days passed and determines color class
 function getDaysPassedAndColor(creationDateString) {
     if (!creationDateString) {
         return { days: null, colorClass: '' }; 
@@ -39,18 +41,21 @@ function getDaysPassedAndColor(creationDateString) {
     const today = new Date();
     const creationDate = new Date(creationDateString);
     
+    // Set both to midnight to only compare calendar dates
     today.setHours(0, 0, 0, 0);
     creationDate.setHours(0, 0, 0, 0);
 
     const diffTime = today.getTime() - creationDate.getTime();
+    // Round up to count the current day as day 1
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     let colorClass = '';
-    if (diffDays <= 3) {
+    // --- COLOR LOGIC ---
+    if (diffDays <= 3) { // 3 days or less (including today) -> Green
         colorClass = 'days-green';
-    } else if (diffDays <= 10) {
+    } else if (diffDays <= 10) { // 4 to 10 days -> Yellow
         colorClass = 'days-yellow';
-    } else {
+    } else { // More than 10 days (over a week and a half) -> Red
         colorClass = 'days-red';
     }
     
@@ -58,7 +63,7 @@ function getDaysPassedAndColor(creationDateString) {
 }
 
 
-// --- LOCAL STORAGE FUNCTIONS (UNCHANGED) ---
+// --- LOCAL STORAGE FUNCTIONS (Persistence) ---
 
 function saveTasksToStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
@@ -80,7 +85,7 @@ function loadTasksFromStorage() {
 }
 
 
-// --- FILTERING LOGIC (NEW) ---
+// --- FILTERING LOGIC ---
 
 function setFilter(filter) {
     currentFilter = filter;
@@ -100,7 +105,7 @@ function setFilter(filter) {
 }
 
 
-// --- CORE RENDERING AND INTERACTION LOGIC (UPDATED) ---
+// --- CORE RENDERING AND INTERACTION LOGIC (FIXED) ---
 
 function renderTasks() {
     // 1. Filter the tasks based on the currentFilter
@@ -141,6 +146,10 @@ function renderTasks() {
             li.classList.add('completed');
         }
 
+        // FIND THE STABLE INDEX: The original position in the main 'tasks' array.
+        // This is crucial for toggling/deleting correctly when a filter is applied.
+        const stableIndex = tasks.indexOf(task); 
+
         li.innerHTML = `
             <span class="task-content">
                 <span class="task-index">[${index + 1}]</span> ${task.text}
@@ -149,18 +158,15 @@ function renderTasks() {
                     — ${daysText}
                 </small>
             </span>
-            <button class="deleteBtn" data-index="${tasks.indexOf(task)}">Delete</button>
+            <button class="deleteBtn" data-index="${stableIndex}">Delete</button>
         `;
-        // NOTE: We use tasks.indexOf(task) for the delete button index 
-        // to ensure we delete the correct item from the main (unfiltered) 'tasks' array.
 
         // Toggle completion status on click
         li.onclick = (e) => {
             if (!e.target.classList.contains('deleteBtn')) {
-                // Find the index in the original array before toggling
-                const originalIndex = tasks.findIndex(t => t.text === task.text && t.createdDate === task.createdDate);
-                if (originalIndex !== -1) {
-                    tasks[originalIndex].completed = !tasks[originalIndex].completed;
+                // Use the stable index to toggle completion in the main 'tasks' array
+                if (stableIndex !== -1) {
+                    tasks[stableIndex].completed = !tasks[stableIndex].completed;
                     renderTasks();
                     saveTasksToStorage();
                 }
@@ -171,7 +177,7 @@ function renderTasks() {
         const delBtn = li.querySelector('.deleteBtn');
         delBtn.onclick = (e) => {
             e.stopPropagation();
-            // The data-index is the index in the *main* tasks array (set above)
+            // The data-index holds the stable index from the main 'tasks' array
             const deleteIndex = parseInt(e.target.getAttribute('data-index')); 
             tasks.splice(deleteIndex, 1);
             renderTasks();
@@ -182,7 +188,7 @@ function renderTasks() {
     });
 }
 
-// Add task (UNCHANGED)
+// Add task
 addBtn.addEventListener('click', () => {
     const text = taskInput.value.trim();
     if (text) {
@@ -197,20 +203,20 @@ addBtn.addEventListener('click', () => {
     }
 });
 
-// Enter key to add (UNCHANGED)
+// Enter key to add
 taskInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { addBtn.click(); }
 });
 
 
-// --- FILTER BUTTON LISTENERS (NEW) ---
+// --- FILTER BUTTON LISTENERS ---
 
 filterAllBtn.addEventListener('click', () => setFilter('all'));
 filterActiveBtn.addEventListener('click', () => setFilter('active'));
 filterCompletedBtn.addEventListener('click', () => setFilter('completed'));
 
 
-// --- SHARE CODE FUNCTIONS (UNCHANGED) ---
+// --- SHARE CODE FUNCTIONS (Base64 Encoding) ---
 
 function encodeBase64(str) {
     return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
@@ -264,7 +270,7 @@ useBtn.addEventListener('click', () => {
     }
 });
 
-// --- URL SHARING FEATURE (UNCHANGED) ---
+// --- URL SHARING FEATURE ---
 
 function loadFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -276,6 +282,6 @@ function loadFromURL() {
 }
 
 
-// --- INITIALIZATION (UNCHANGED) ---
+// --- INITIALIZATION ---
 
 loadTasksFromStorage();
